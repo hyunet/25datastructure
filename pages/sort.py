@@ -1,90 +1,64 @@
 import streamlit as st
 import random
 import time
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import numpy as np
 
-def bubble_sort(arr):
+# 정렬 알고리즘 정의
+
+def bubble_sort_trace(arr):
+    trace = []
     a = arr[:]
+    trace.append(a[:])
     for i in range(len(a)):
         for j in range(0, len(a) - i - 1):
             if a[j] > a[j + 1]:
                 a[j], a[j + 1] = a[j + 1], a[j]
-    return a
+                trace.append(a[:])
+    return trace
 
-def insertion_sort(arr):
-    a = arr[:]
-    for i in range(1, len(a)):
-        key = a[i]
-        j = i - 1
-        while j >= 0 and key < a[j]:
-            a[j + 1] = a[j]
-            j -= 1
-        a[j + 1] = key
-    return a
+# 시각화 함수
 
-def selection_sort(arr):
-    a = arr[:]
-    for i in range(len(a)):
-        min_idx = i
-        for j in range(i + 1, len(a)):
-            if a[j] < a[min_idx]:
-                min_idx = j
-        a[i], a[min_idx] = a[min_idx], a[i]
-    return a
+def animate_sort(trace, title="Bubble Sort Animation"):
+    fig, ax = plt.subplots()
+    bar_rects = ax.bar(range(len(trace[0])), trace[0], align="edge", color="skyblue")
+    ax.set_title(title)
+    ax.set_xlim(0, len(trace[0]))
+    ax.set_ylim(0, max(trace[0]) * 1.1)
+    text = ax.text(0.02, 0.95, "", transform=ax.transAxes)
 
-def merge_sort(arr):
-    if len(arr) <= 1:
-        return arr
-    mid = len(arr) // 2
-    left = merge_sort(arr[:mid])
-    right = merge_sort(arr[mid:])
-    return merge(left, right)
+    iteration = [0]
 
-def merge(left, right):
-    result = []
-    while left and right:
-        if left[0] < right[0]:
-            result.append(left.pop(0))
-        else:
-            result.append(right.pop(0))
-    result.extend(left + right)
-    return result
+    def update_fig(arr, rects, iteration):
+        for rect, val in zip(rects, arr):
+            rect.set_height(val)
+        iteration[0] += 1
+        text.set_text(f"Step: {iteration[0]}")
 
-def quick_sort(arr):
-    if len(arr) <= 1:
-        return arr
-    pivot = arr[0]
-    less = [x for x in arr[1:] if x <= pivot]
-    greater = [x for x in arr[1:] if x > pivot]
-    return quick_sort(less) + [pivot] + quick_sort(greater)
+    anim = animation.FuncAnimation(
+        fig,
+        func=update_fig,
+        fargs=(bar_rects, iteration),
+        frames=trace,
+        interval=300,
+        repeat=False
+    )
+    return anim
 
-SORTING_ALGOS = {
-    "버블 정렬": bubble_sort,
-    "선택 정렬": selection_sort,
-    "삽입 정렬": insertion_sort,
-    "머지 정렬": merge_sort,
-    "퀵 정렬": quick_sort
-}
+# Streamlit UI 시작
 
-st.title("🧮 정렬 알고리즘 비교 실험")
-st.write("랜덤 데이터를 여러 정렬 알고리즘으로 정렬하고 결과 및 속도를 비교합니다.")
+st.title("🎞️ 정렬 알고리즘 시각화 (Bubble Sort)")
+st.markdown("1부터 30까지 숫자 카드를 섞고, 버블 정렬을 통해 정렬 과정을 시각화합니다.")
 
-arr_size = st.slider("데이터 크기 선택", 10, 200, 50, step=10)
-arr = random.sample(range(1, 1000), arr_size)
+if st.button("시각화 시작"):
+    array = list(range(1, 31))
+    random.shuffle(array)
+    trace = bubble_sort_trace(array)
+    ani = animate_sort(trace)
+    st.pyplot(ani._fig)
 
-selected = st.multiselect("비교할 정렬 알고리즘 선택", list(SORTING_ALGOS.keys()), default=list(SORTING_ALGOS.keys())[:3])
-
-if st.button("정렬 실행"):
-    st.write("원본 데이터:", arr)
-    results = {}
-
-    for algo_name in selected:
-        sort_fn = SORTING_ALGOS[algo_name]
-        start_time = time.time()
-        sorted_arr = sort_fn(arr)
-        elapsed = time.time() - start_time
-        results[algo_name] = (sorted_arr, elapsed)
-
-    for algo_name, (sorted_arr, elapsed) in results.items():
-        st.markdown(f"### 🧪 {algo_name}")
-        st.write("정렬 결과:", sorted_arr)
-        st.write(f"⏱️ 실행 시간: {elapsed:.6f}초")
+st.markdown("""
+---
+📌 더 많은 정렬 알고리즘(삽입, 선택, 퀵, 머지 등)을 시각화로 확장하고 싶으시면 말씀해주세요!
+""
